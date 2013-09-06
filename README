@@ -1,0 +1,5 @@
+Lighthouse provides a REPL for Common LISP in a web browser using AJAX. The REPL is dynamically created using Hunchentoot, and also uses HT-SIMPLE-AJAX and a fork of GTFL.
+
+It displays an editor component (using CodeMirror) to allow properly indented editing of CL code, and keeps a history of typed commands and responses from LISP, as in a normal REPL. It is possible to recall previously typed commands by pressing Ctrl+up.
+
+Lighthouse allows Common Lisp to send Javascript commands to evaluate on browser side, and also allows Javascript to send CL commands back to LISP to evaluate. Because of this, generating a rich IDE for CL development is possible; and it is one of the goals of this project. Another is to create a browser GUI framework.
