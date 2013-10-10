@@ -1,5 +1,3 @@
-(load "c:/lispbox2/config/quicklisp.lisp")
-(load "c:/lispbox2/config/quicklisp/setup.lisp")
 (ql:quickload "gtfl")
 ;(ql:quickload "vecto")
 
