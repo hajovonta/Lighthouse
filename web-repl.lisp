@@ -304,15 +304,15 @@ is replaced with replacement."
 						       "/logo.png?"
 						       (make-id-string))))))
 
-(defun write-on-image (file text)
-  (vecto:with-canvas (:width 600 :height 50)
-    (vecto:set-rgb-fill 1.0 0.65 0.3)
-    (vecto:rectangle 0 0 600 50)
-    (vecto:fill-path)
-    (vecto:set-rgb-fill 0 0 0)
-    (vecto:set-font (vecto:get-font "times.ttf") 30)
-    (vecto:draw-string 10 10 text)
-    (vecto:save-png file)))
+;(defun write-on-image (file text)
+;  (vecto:with-canvas (:width 600 :height 50)
+;    (vecto:set-rgb-fill 1.0 0.65 0.3)
+;    (vecto:rectangle 0 0 600 50)
+;    (vecto:fill-path)
+;    (vecto:set-rgb-fill 0 0 0)
+;    (vecto:set-font (vecto:get-font "times.ttf") 30)
+;    (vecto:draw-string 10 10 text)
+;    (vecto:save-png file)))
 
 (push (create-static-file-dispatcher-and-handler
        "/logo.png" "c:/lispbox2/beacon-logo.png")
