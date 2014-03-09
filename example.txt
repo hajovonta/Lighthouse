@@ -1,0 +1,16 @@
+(load "%path%/quicklisp/setup.lisp")
+
+(load "%path%/lighthouse/web-repl.lisp")
+
+; open a browser on http://127.0.0.1:8000
+; you should see a web repl where you can type CL commands and see responses.
+; type (use ctrl+enter to send commands to CL):
+
+(in-package :cl-beacon)
+(defun foo (myvar)
+  (gtfl-print 'output (+ 10 (parse-integer myvar))))
+(gtfl-textbox "test" "" 'foo)
+
+; you will be presented with a textbox, where you can type numbers (you can implement other type of inputs with validation if you like), type "123" and press ctrl+enter. Your input will be fed by function foo and you will get back the result.
+
+; there is limited error handling. Currently you should often check your CL repl.
