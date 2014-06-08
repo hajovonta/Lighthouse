@@ -319,3 +319,30 @@ is replaced with replacement."
       *dispatch-table*)
 
 (format t "***** started cl-beacon *****~%")
+
+;;some examples.
+
+;;The following creates a text span with a default text value.
+
+;;(gtfl-span "testspan" "display value")
+
+;;The following changes the default text value via the javascript interface:
+
+;;(eval-js "document.getElementById('testspan').innerHTML='new display value'")
+
+
+;;This is a convenience interface to the javascript interface above.
+(defun cl-change-span-value (targetspanid newvalue)
+  (eval-js (concatenate 'string "document.getElementById('" targetspanid "').innerHTML='" newvalue "'")))
+
+;;(cl-change-span-value "testspan" "new display value")
+
+;;The following creates a function that will be attached to a textbox. The values typed into the textbox will be handled by this function. The function multiplies the input value and sets the value of the above text span to the multiplied value. The function is invoked when the user presses enter key.
+
+;;(defun test-attach-function (input-value)
+;;  (cl-change-span-value "testspan" (write-to-string (* 2 (parse-integer input-value)))))
+
+;;Create the textbox with the function attached.
+
+;;(gtfl-textbox "testbox" "0" #'test-attach-function)
+
