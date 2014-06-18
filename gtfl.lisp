@@ -34,7 +34,7 @@
 	  reset-gtfl *reset-functions*
 	  who who2s who-lambda
 	  define-css define-js
-          make-id-string))
+          make-id-string *display-editor*))
 
 ;; we require the version of hunchentoot to be >= 1.1.0
 (unless (string>= (asdf:component-version (asdf:find-system :hunchentoot)) "1.2.0")
@@ -51,6 +51,8 @@
 ;; the hunchentoot server instance
 (defvar *gtfl-server* nil)
 
+;; determines whether to display the reset button and other stuff
+(defparameter *display-editor* t)
 
 ;; starts the web server
 (defun start-gtfl ()
@@ -238,8 +240,8 @@ function getRequests () {
 		    do (write-string definition)))) 
      (:body :onLoad "window.setTimeout(getRequests,500);"
 	    (:div :id "content")
-	    (:p :class "gtfl" 
-		(:a :class "button" :href "javascript:ajax_reset();" "reset"))))))
+	    (when *display-editor* (:p :class "gtfl" 
+				       (:a :class "button" :href "javascript:ajax_reset();" "reset")))))))
 
 
 

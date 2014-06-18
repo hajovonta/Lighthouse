@@ -1,6 +1,7 @@
 (ql:quickload "gtfl")
 ;(ql:quickload "vecto")
 
+
 (defpackage :cl-beacon
   (:use :cl :gtfl :hunchentoot :cl-who :ht-simple-ajax))
 (in-package :cl-beacon)
@@ -26,6 +27,8 @@
 (defparameter refresh-interval 200)
 (defparameter history-counter 0)
 (defparameter list-of-f (make-hash-table :test 'equal))
+(defparameter lh-interfaces (make-hash-table :test 'eq))
+(defparameter display-editor t)
 
 (defmacro eval-js (&rest expr)
   "evals javascript on client side"
@@ -114,11 +117,11 @@ window.scrollTo(0, document.body.scrollHeight);"))
 ;  (reset)
   (gtfl-out (:p (:span :id (setf interface-id (make-id-string)))))
   (gtfl-out (:p (:span :id (setf text-id (make-id-string)))))
-  (gtfl-display-lines))
+  (when display-editor (gtfl-display-lines)))
 
 (defun gtfl-print (direction text)
   (push (list direction text (package-name *package*)) all-lines)
-  (gtfl-display-lines))
+  (when display-editor (gtfl-display-lines)))
 
 (defun cl-b-reset ()
   (setf all-lines nil)
@@ -149,7 +152,10 @@ window.scrollTo(0, document.body.scrollHeight);"))
 		  my-error))))
 
 (defun-ajax text-input (source param) (*ajax-processor*)
-  (funcall (gethash source list-of-f) param))
+  (lambda (param) (funcall (gethash source list-of-f) param)))
+
+(defun-ajax button-input (source) (*ajax-processor*)
+  (funcall (gethash source list-of-f)))
 
 (defun element-property (id property)
   (concatenate 'string
@@ -159,23 +165,36 @@ window.scrollTo(0, document.body.scrollHeight);"))
   (concatenate 'string
 	       "if (event.keyCode == 13) {ajax_text_input('" id "', " (element-property id "value") ");}"))
 
-(defun gtfl-textbox (id value f-to-execute)
-  (append-to-element interface-id (:input :type "text"
-					  :id id
-					  :onkeypress (generate-keypress-func id)
-					  :value value))
-  (setf (gethash id list-of-f) f-to-execute)
-  t)
+(defun generate-click-func (id)
+  (concatenate 'string
+	       "ajax_button_input('" id "');"))
 
-(defun gtfl-span (id value)
-  (append-to-element interface-id (:span :id id (str value))))
+(defun lh-textbox (value &optional f-to-execute (id (make-id)))
+    (append-to-element interface-id (:input :type "text"
+					    :id id
+					    :onkeypress (generate-keypress-func id)
+					    :value value))
+    (setf (gethash id list-of-f) f-to-execute)))
+    id)
 
-(defun cl-b-canvas (context-name width height)
-  (let ((canvas-id (replace-all "-" (make-id-string) "")))
-    (append-to-element interface-id (:canvas :id canvas-id :width width :height height))
-    (eval-js "var " canvas-id " = document.getElementById('" canvas-id "');")
-    (eval-js "var " context-name " = " canvas-id ".getContext('2d');")))
-  
+(defun lh-button (value &optional f-to-execute (id (make-id)))
+    (append-to-element interface-id (:input :type "button"
+					    :id id
+					    :onclick (generate-click-func id)
+					    :value value))
+    (setf (gethash id list-of-f) f-to-execute)
+    id)
+
+(defun lh-span (value &optional (id (make-id)))
+    (append-to-element interface-id (:span :id id (str value)))
+    id)
+
+(defun lh-canvas (context-name width height &optional (id (make-id)))
+  (append-to-element interface-id (:canvas :id id :width width :height height))
+  (eval-js "var " id " = document.getElementById('" id "');")
+  (eval-js "var " context-name " = " id ".getContext('2d');")
+  id)
+
 ;(eval-js "
 ;function ajax_my_repl(param, callback) {
 ;  ajax_call('MY_REPL', callback, [param]);
@@ -244,6 +263,7 @@ is replaced with replacement."
     (setf out (replace-all "'" out "\\'"))
     (setf out (replace-all "
 " out "\\n"))
+    (setf out (replace-all "\"" out "&quot;"))
     out))
 
 (defun-ajax history-prev () (*ajax-processor*)
@@ -324,7 +344,7 @@ is replaced with replacement."
 
 ;;The following creates a text span with a default text value.
 
-;;(gtfl-span "testspan" "display value")
+;;(lh-span "testspan" "display value")
 
 ;;The following changes the default text value via the javascript interface:
 
@@ -332,17 +352,60 @@ is replaced with replacement."
 
 
 ;;This is a convenience interface to the javascript interface above.
-(defun cl-change-span-value (targetspanid newvalue)
+(defun change-span-value (targetspanid newvalue)
   (eval-js (concatenate 'string "document.getElementById('" targetspanid "').innerHTML='" newvalue "'")))
 
-;;(cl-change-span-value "testspan" "new display value")
+;;(lh-change-span-value "testspan" "new display value")
 
 ;;The following creates a function that will be attached to a textbox. The values typed into the textbox will be handled by this function. The function multiplies the input value and sets the value of the above text span to the multiplied value. The function is invoked when the user presses enter key.
 
 ;;(defun test-attach-function (input-value)
-;;  (cl-change-span-value "testspan" (write-to-string (* 2 (parse-integer input-value)))))
+;;  (change-span-value "testspan" (write-to-string (* 2 (parse-integer input-value)))))
 
 ;;Create the textbox with the function attached.
 
-;;(gtfl-textbox "testbox" "0" #'test-attach-function)
+;;(lh-textbox "0" #'test-attach-function)
 
+
+;;Experimental interface saving and recreation functions.
+(defun add-lh-element (item interface)
+  (push item (gethash interface lh-interfaces)))
+
+(defun present-interface (interface)
+  (replace-element-content interface-id "")
+  (mapcar #'eval (reverse (gethash interface lh-interfaces)))
+  t)
+
+(defun init-interface (interface &optional contents)
+  (setf (gethash interface lh-interfaces) contents))
+
+(defun remove-interface (interface)
+  (remhash interface lh-interfaces))
+
+(init-interface 'test-interface '((LH-SPAN "type an integer in the textbox and I double it" "testspan")
+				  (APPEND-TO-ELEMENT interface-id (:br))
+                                  (LH-TEXTBOX "0" #'test-attach-function)
+		    (DEFUN TEST (INPUT-VALUE)
+		      (TEST-ATTACH-FUNCTION INPUT-VALUE))
+		    (DEFUN TEST-ATTACH-FUNCTION (INPUT-VALUE)
+		      (CHANGE-SPAN-VALUE "testspan"
+					 (WRITE-TO-STRING (* 2 (PARSE-INTEGER INPUT-VALUE)))))))
+
+;;Now create the same interface as above:
+;;(present-interface 'test-interface)
+
+;;When we change a function definition that is attached to an input element, it won't be automatically updated. We can use a proxy-function technique if you want to update attached function definitions runtime. Attach a persistent function to the textbox, which calls the updatable second function with the same parameters.
+
+;;TODO: create a canvas gui interface.
+
+;;Hides or shows the editor. When the editor is hidden, it can be displayed only from the CL REPL (unless you make a way on the interface)
+(defun toggle-editor ()
+  (setf display-editor (not display-editor))
+  (if display-editor
+      (gtfl-display-lines)
+      (replace-element-content text-id "")))
+
+;;TODO: create a way to get element properties to CL side. This should be useful to inspect certain values (e.g. for validation)
+
+(defun make-id ()
+  (replace-all "-" (make-id-string) ""))
